@@ -11,6 +11,7 @@ def main(dir):
 
     home_dir = os.environ['HOME']
     cache_filename = os.path.join(home_dir, '.cache', 'xscreensaver', 'xscreensaver-getimage-alt.cache')
+    os.makedirs(os.path.dirname(cache_filename), exist_ok=True)
     cache_fd = os.open(cache_filename, os.O_CREAT | os.O_RDWR, 0o666)
     fcntl.lockf(cache_fd, fcntl.LOCK_EX)
 
