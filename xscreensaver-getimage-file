@@ -1,0 +1,56 @@
+#!/bin/env python
+
+import sys
+import os
+import time
+import fcntl
+
+def main(dir):
+    files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
+    sortedfiles = sorted(files, key=lambda s: s.lower())
+
+    home_dir = os.environ['HOME']
+    cache_filename = os.path.join(home_dir, '.cache', 'xscreensaver', 'xscreensaver-getimage-alt.cache')
+    cache_fd = os.open(cache_filename, os.O_CREAT | os.O_RDWR, 0o666)
+    fcntl.lockf(cache_fd, fcntl.LOCK_EX)
+
+    cache_file = os.fdopen(cache_fd, 'r+', closefd=False)
+    line = cache_file.readline()
+    if not line:
+        if not sortedfiles:
+            sys.exit(1);
+        else:
+            newfile = sortedfiles[0]
+            write_cache(cache_file, newfile)
+            print(newfile)
+    else:
+        updatetime_filename = line.split(' ', 1)
+        updatetime = float(updatetime_filename[0])
+        filename = updatetime_filename[1]
+
+        currenttime = time.time()
+        if currenttime - updatetime > 2:
+            # get next item in list
+            if filename in sortedfiles:
+                newindex = (sortedfiles.index(filename) + 1) % len(sortedfiles)
+            else:
+                newindex = 0
+            newfile = sortedfiles[newindex]
+            write_cache(cache_file, newfile)
+            print(newfile)
+        else:
+            print(filename)
+
+    fcntl.lockf(cache_fd, fcntl.LOCK_UN)
+    os.close(cache_fd)
+
+def write_cache(cache_file, filename):
+    cache_file.seek(0)
+    cache_file.truncate(0)
+    cache_file.write(str(time.time()))
+    cache_file.write(' ')
+    cache_file.write(filename)
+    cache_file.flush()
+
+if __name__ == "__main__":
+   main(sys.argv[-1])
